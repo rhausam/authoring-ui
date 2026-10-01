@@ -14,6 +14,7 @@ Authoring Services ──► gateway ──► Snowstorm / fake IMS
 Snowstorm ──► Elasticsearch :9200
 Authoring Services ──► MariaDB/MySQL :3306 (ts_review)
 Snowstorm ◄──► ActiveMQ :61616 ◄──► Authoring Services
+Snowstorm ──► Classification Service :8089 ──► RF2 release zip (previousPackage)
 ```
 
 The gateway does the job of the nginx + IMS front door in a real deployment. You
@@ -38,8 +39,9 @@ their roles are in [`users.json`](users.json):
 | Elasticsearch 8 | running on `localhost:9200` |
 | MariaDB or MySQL | running on `localhost:3306` |
 | ActiveMQ Classic | `brew install activemq` (started by `start.sh`) |
-| [Snowstorm](https://github.com/IHTSDO/snowstorm) | built jar, default `~/git-repo/snowstorm/target/snowstorm-11.0.0.jar` |
+| [Snowstorm](https://github.com/IHTSDO/snowstorm) | built jar with [`patches/snowstorm-11.0.0-export-module-filter.patch`](patches/) applied (see below), default `~/git-repo/snowstorm/target/snowstorm-11.0.0.jar` |
 | [Authoring Services](https://github.com/IHTSDO/authoring-services) | built jar with [`patches/authoring-services-10.0.1-local-fixes.patch`](patches/) applied (see below), default `~/git-repo/authoring-services/target/authoring-services-10.0.1.jar` |
+| [Classification Service](https://github.com/IHTSDO/classification-service) | built jar, default `~/git-repo/classification-service/target/classification-service-10.0.1.jar` |
 | [snomed-drools-rules](https://github.com/IHTSDO/snomed-drools-rules) | cloned to `~/git-repo/snomed-drools-rules`; Snowstorm runs these when the UI saves a concept |
 | SNOMED CT RF2 release | an Edition package (International, or e.g. AU/US which include International) |
 
@@ -48,6 +50,7 @@ Paths and ports can be changed in `env.local.sh` (gitignored), for example:
 ```bash
 JAVA_25=/Library/Java/JavaVirtualMachines/liberica-jdk-25.jdk/Contents/Home/bin/java
 SNOWSTORM_JAR=$HOME/src/snowstorm/target/snowstorm-11.0.0.jar
+RF2_RELEASE_ZIP=$HOME/Downloads/SnomedCT_InternationalRF2_PRODUCTION_20260901T120000Z.zip
 ```
 
 If you change a port, also update the URLs in `authoring-services.properties`.
@@ -93,6 +96,19 @@ If you change a port, also update the URLs in `authoring-services.properties`.
    mvn -DskipTests package
    ```
 
+   **Snowstorm 11.0.0** needs one fix too, for classification of extension-module
+   content. Its RF2 export kept the module dependency refset's module filter for every
+   refset exported after it. On a `MAIN` code system that drops OWL axioms in
+   non-International modules (e.g. AU) from the classification delta, so classification
+   finds no changes. This is fixed upstream on `develop` (85780b81, MAINT-2903) but not
+   yet released; the patch is a backport:
+
+   ```bash
+   cd ~/git-repo/snowstorm
+   git am ~/git-repo/authoring-ui/local-dev/patches/snowstorm-11.0.0-export-module-filter.patch
+   mvn -DskipTests package
+   ```
+
 4. **Load SNOMED CT into Snowstorm** (once; takes a while). Use the Snapshot package:
 
    ```bash
@@ -114,6 +130,12 @@ If you change a port, also update the URLs in `authoring-services.properties`.
    `1000036`, the en-AU language refset, and the `common-authoring,au-authoring`
    validation rule groups. For other content override the variables listed at the
    top of the script.
+
+   It also symlinks `RF2_RELEASE_ZIP` (set in `env.sh`, the release you loaded) into
+   the Classification Service release store and sets it as `MAIN`'s `previousPackage`.
+   Classification sends the task's changes as a delta, and the service classifies
+   them together with that release. So when you load a different release, update
+   `RF2_RELEASE_ZIP` and run `seed.sh` again.
    Snowstorm generates identifiers itself, so they are unique only within this
    local instance; don't distribute content authored here.
 
@@ -132,13 +154,16 @@ Saving a concept runs the Drools rules. The `common-authoring` group requires an
 and a preferred synonym in the **US English** language refset as well as en-AU, so set
 the `us` acceptability to P as well as `au`.
 
+Classifying a task runs the whole edition through ELK: about 70 seconds for the AU
+Edition on an M3, with a 12 GB heap for the Classification Service. Review the results
+and save them from the task's Classification view.
+
 To try the review workflow, create a task as `author1`, submit it for review,
 then log out (user menu) and log in as `reviewer1`.
 
 ## What isn't available locally
 
 These features call services that aren't part of this stack, so they show errors
-or empty results: launching other platform apps; classification (needs
-[classification-service](https://github.com/IHTSDO/classification-service)), RVF
+or empty results: launching other platform apps, RVF
 validation, the authoring acceptance gateway, templates, release notes, reporting,
 traceability, CRS and spell check. The gateway answers `503` for those paths.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start the local Authoring Platform stack: ActiveMQ, Snowstorm, Authoring Services,
-# the UI (grunt serve) and the gateway. Elasticsearch and MariaDB/MySQL must already
+# the Classification Service, the UI (grunt serve) and the gateway. Elasticsearch and MariaDB/MySQL must already
 # be running. Then open http://localhost:9100
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
@@ -57,6 +57,20 @@ else
   echo $! > "$LOGS/authoring-services.pid"
 fi
 
+if is_running classification-service; then
+  echo 'Classification Service already running'
+else
+  echo "Starting Classification Service on $CLASSIFICATION_SERVICE_PORT"
+  mkdir -p "$LOCAL_DEV/data/classification-service"
+  cd "$LOCAL_DEV/data/classification-service"
+  # classifying a whole edition (e.g. AU with AMT) needs a large heap
+  nohup "$JAVA_25" -Xmx12g -jar "$CLASSIFICATION_SERVICE_JAR" \
+    --spring.config.additional-location="file:$LOCAL_DEV/classification-service.properties" \
+    --server.port="$CLASSIFICATION_SERVICE_PORT" \
+    > "$LOGS/classification-service.log" 2>&1 &
+  echo $! > "$LOGS/classification-service.pid"
+fi
+
 if is_running grunt; then
   echo 'UI (grunt serve) already running'
 else
@@ -71,6 +85,7 @@ fi
 
 wait_for_url "http://localhost:$AUTHORING_SERVICES_PORT/authoring-services/version" 'Authoring Services'
 wait_for_url "http://localhost:$UI_PORT/" UI
+wait_for_url "http://localhost:$CLASSIFICATION_SERVICE_PORT/classification-service/version" 'Classification Service'
 
 echo
 echo "Ready: http://localhost:$GATEWAY_PORT   (logs in local-dev/logs/)"

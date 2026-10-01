@@ -3,6 +3,8 @@
 #   - grants AUTHOR on MAIN to the ihtsdo-sca-author group (Authoring Services copies
 #     the branch's AUTHOR/ADMIN groups onto new projects to decide who can see them)
 #   - sets the MAIN branch module, namespace, language refset and validation rule groups
+#   - links the loaded release into the Classification Service store and sets it as
+#     MAIN's previousPackage (the release that classification builds on)
 #   - creates a demo project in Authoring Services
 # Safe to re-run. Calls go through the gateway as the local "admin" user.
 #
@@ -43,6 +45,17 @@ echo "Setting MAIN defaultModuleId=$MODULE_ID defaultNamespace=$NAMESPACE langua
 call -X PUT "${ADMIN[@]}" "$G/snowstorm/snomed-ct/branches/MAIN/metadata-upsert" \
   -d "{\"defaultModuleId\":\"$MODULE_ID\",\"defaultNamespace\":\"$NAMESPACE\",\"assertionGroupNames\":\"$ASSERTION_GROUPS\",
        \"requiredLanguageRefsets\":[{\"en\":\"$LANGUAGE_REFSET\",\"default\":\"true\",\"dialectName\":\"$DIALECT\"}]}"
+
+PREVIOUS_PACKAGE=$(basename "$RF2_RELEASE_ZIP")
+if [ -f "$RF2_RELEASE_ZIP" ]; then
+  echo "Linking $PREVIOUS_PACKAGE into the Classification Service release store"
+  mkdir -p "$LOCAL_DEV/data/classification-service/releases"
+  ln -sf "$RF2_RELEASE_ZIP" "$LOCAL_DEV/data/classification-service/releases/$PREVIOUS_PACKAGE"
+  call -X PUT "${ADMIN[@]}" "$G/snowstorm/snomed-ct/branches/MAIN/metadata-upsert" \
+    -d "{\"previousPackage\":\"$PREVIOUS_PACKAGE\"}"
+else
+  echo "RF2_RELEASE_ZIP not found ($RF2_RELEASE_ZIP) - skipping classification setup" >&2
+fi
 
 if curl -sf -o /dev/null "${ADMIN[@]}" "$G/authoring-services/projects/$PROJECT_KEY"; then
   echo "Project $PROJECT_KEY already exists"

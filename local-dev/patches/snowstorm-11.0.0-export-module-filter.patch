@@ -1,0 +1,57 @@
+From 55f751fdb3fed7faa4c5ad7b47fb1fecf57e021e Mon Sep 17 00:00:00 2001
+From: Rob Hausam <rrhausam@gmail.com>
+Date: Thu, 1 Oct 2026 17:30:16 -0500
+Subject: [PATCH] Backport MAINT-2903 export module filter fix (85780b81) to
+ 11.0.0
+
+The module dependency refset's branch-module filter was added to the shared
+moduleIds set and never removed, so refsets exported after it (including
+OWL axioms) were limited to those modules. On a MAIN code system that is
+only core/model/ICD-10, which dropped extension-module axioms from
+classification deltas.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../snowstorm/core/rf2/export/ExportService.java      | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/src/main/java/org/snomed/snowstorm/core/rf2/export/ExportService.java b/src/main/java/org/snomed/snowstorm/core/rf2/export/ExportService.java
+index ac4ce9fa..d8a67c4a 100644
+--- a/src/main/java/org/snomed/snowstorm/core/rf2/export/ExportService.java
++++ b/src/main/java/org/snomed/snowstorm/core/rf2/export/ExportService.java
+@@ -289,17 +289,21 @@ public class ExportService {
+ 				if (moduleIds == null) {
+ 					moduleIds = new HashSet<>();
+ 				}
+-				Set<String> moduleIdsBackup = moduleIds;
+ 				for (ReferenceSetType referenceSetType : referenceSetTypes) {
+ 					List<Long> refsetsOfThisType = new ArrayList<>(queryService.findDescendantIdsAsUnion(allContentBranchCriteria, true, Collections.singleton(Long.parseLong(referenceSetType.getConceptId()))));
+ 					refsetsOfThisType.add(Long.parseLong(referenceSetType.getConceptId()));
+ 					for (Long refsetToExport : refsetsOfThisType) {
+ 						if (!refsetOnlyExport || refsetIds.contains(refsetToExport.toString())) {
++							// Only the module dependency refset is limited to the branch modules. Use a copy
++							// so the filter doesn't carry over to the refsets exported after it
++							// (backport of upstream 85780b81, MAINT-2903)
++							Set<String> refsetModuleIds = moduleIds;
+ 							if (Concepts.MODULE_DEPENDENCY_REFERENCE_SET.equals(String.valueOf(refsetToExport))) {
+-								moduleIds.addAll(sBranchService.getModules(branchPath));
++								refsetModuleIds = new HashSet<>(moduleIds);
++								refsetModuleIds.addAll(sBranchService.getModules(branchPath));
+ 							}
+ 
+-							BoolQuery.Builder memberQueryBuilder = getContentQuery(exportType, moduleIds, startEffectiveTime, memberBranchCriteria);
++							BoolQuery.Builder memberQueryBuilder = getContentQuery(exportType, refsetModuleIds, startEffectiveTime, memberBranchCriteria);
+ 							memberQueryBuilder.must(termQuery(ReferenceSetMember.Fields.REFSET_ID, refsetToExport));
+ 							Query memberQuery = memberQueryBuilder.build()._toQuery();
+ 							long memberCount = elasticsearchOperations.count(getNativeSearchQuery(memberQuery), ReferenceSetMember.class);
+@@ -321,7 +325,6 @@ public class ExportService {
+ 										codeSystemRF2Name,
+ 										null);
+ 							}
+-							moduleIds = moduleIdsBackup;
+ 						}
+ 					}
+ 				}
+-- 
+2.55.0
+

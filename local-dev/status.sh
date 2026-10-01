@@ -14,6 +14,7 @@ check() {
 check Elasticsearch http://localhost:9200
 check Snowstorm "http://localhost:$SNOWSTORM_PORT/version"
 check 'Authoring Services' "http://localhost:$AUTHORING_SERVICES_PORT/authoring-services/version"
+check 'Classification Svc' "http://localhost:$CLASSIFICATION_SERVICE_PORT/classification-service/version"
 check 'UI (grunt)' "http://localhost:$UI_PORT/"
 check Gateway "http://localhost:$GATEWAY_PORT/local-login"
 if port_open 61616; then

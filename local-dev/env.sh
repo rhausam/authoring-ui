@@ -10,12 +10,18 @@ LOGS="$LOCAL_DEV/logs"
 
 : "${SNOWSTORM_JAR:=$HOME/git-repo/snowstorm/target/snowstorm-11.0.0.jar}"
 : "${AUTHORING_SERVICES_JAR:=$HOME/git-repo/authoring-services/target/authoring-services-10.0.1.jar}"
+: "${CLASSIFICATION_SERVICE_JAR:=$HOME/git-repo/classification-service/target/classification-service-10.0.1.jar}"
 : "${ACTIVEMQ_HOME:=$(brew --prefix activemq 2>/dev/null)}"
 
 : "${GATEWAY_PORT:=9100}"
 : "${UI_PORT:=9001}"
 : "${SNOWSTORM_PORT:=8090}"
 : "${AUTHORING_SERVICES_PORT:=8081}"
+: "${CLASSIFICATION_SERVICE_PORT:=8089}"
+
+# The RF2 release loaded into Snowstorm. seed.sh links it into the Classification
+# Service release store and sets it as MAIN's previousPackage.
+: "${RF2_RELEASE_ZIP:=$HOME/Downloads/NCTS_SCT_RF2_DISTRIBUTION_32506021000036107-20260930-SNAPSHOT.zip}"
 
 if [ -f "$LOCAL_DEV/env.local.sh" ]; then
   . "$LOCAL_DEV/env.local.sh"
