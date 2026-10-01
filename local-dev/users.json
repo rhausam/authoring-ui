@@ -1,0 +1,20 @@
+[
+  {
+    "login": "admin",
+    "firstName": "Local",
+    "lastName": "Admin",
+    "roles": ["ROLE_ihtsdo-sca-author", "ROLE_snowstorm-admin"]
+  },
+  {
+    "login": "author1",
+    "firstName": "Author",
+    "lastName": "One",
+    "roles": ["ROLE_ihtsdo-sca-author"]
+  },
+  {
+    "login": "reviewer1",
+    "firstName": "Reviewer",
+    "lastName": "One",
+    "roles": ["ROLE_ihtsdo-sca-author"]
+  }
+]

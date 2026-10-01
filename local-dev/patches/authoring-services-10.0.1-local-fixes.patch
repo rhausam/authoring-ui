@@ -1,0 +1,51 @@
+diff --git a/src/main/java/org/ihtsdo/authoringservices/entity/Project.java b/src/main/java/org/ihtsdo/authoringservices/entity/Project.java
+index 9374de40..07362b67 100644
+--- a/src/main/java/org/ihtsdo/authoringservices/entity/Project.java
++++ b/src/main/java/org/ihtsdo/authoringservices/entity/Project.java
+@@ -31,13 +31,13 @@ public class Project extends BaseEntity {
+     @JdbcTypeCode(SqlTypes.JSON)
+     private Map<String, Boolean> customFields = new HashMap<>();
+ 
+-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
++    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "project")
+     private TaskSequence taskSequence;
+ 
+-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
++    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, mappedBy = "project")
+     private List<ProjectUserGroup> userGroups = new ArrayList<>();
+ 
+-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
++    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "project")
+     private List<Task> tasks = new ArrayList<>();
+ 
+     @Transient
+diff --git a/src/main/java/org/ihtsdo/authoringservices/entity/Task.java b/src/main/java/org/ihtsdo/authoringservices/entity/Task.java
+index 4655e400..6c28a45b 100644
+--- a/src/main/java/org/ihtsdo/authoringservices/entity/Task.java
++++ b/src/main/java/org/ihtsdo/authoringservices/entity/Task.java
+@@ -41,10 +41,10 @@ public class  Task {
+     @Column(nullable = false)
+     private String reporter;
+ 
+-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
++    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, mappedBy = "task")
+     private List<CrsTask> crsTasks;
+ 
+-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
++    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, mappedBy = "task")
+     private List<TaskReviewer> reviewers = new ArrayList<>();
+ 
+     @Column(name = "created_timestamp")
+diff --git a/src/main/java/org/ihtsdo/authoringservices/service/BranchService.java b/src/main/java/org/ihtsdo/authoringservices/service/BranchService.java
+index 04a59297..125ba946 100644
+--- a/src/main/java/org/ihtsdo/authoringservices/service/BranchService.java
++++ b/src/main/java/org/ihtsdo/authoringservices/service/BranchService.java
+@@ -150,6 +150,8 @@ public class BranchService {
+     private void createBranch(String branchPath) throws ServiceException {
+         try {
+             snowstormRestClientFactory.getClient().createBranch(branchPath);
++            // getBranchOrNull caches the earlier "not found" result
++            branchServiceCache.evictBranchCache(branchPath);
+         } catch (RestClientException e) {
+             throw new ServiceException("Failed to create branch " + branchPath, e);
+         }

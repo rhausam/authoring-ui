@@ -17,3 +17,10 @@ node/*
 /cypress/screenshots/
 /cypress/downloads/
 /cypress.env.json
+
+# Local development stack (see local-dev/README.md)
+/local-dev/logs/
+/local-dev/*.log
+/local-dev/data/
+/local-dev/.secrets.env
+/local-dev/env.local.sh

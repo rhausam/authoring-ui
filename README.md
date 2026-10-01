@@ -96,28 +96,33 @@ Naming conventions:
 
 ### 4.1  Prerequisites
 
-1. **Node 18+** with **npm** (use [nvm](https://github.com/nvm-sh/nvm)).
-2. **Grunt CLI** – `npm install -g grunt-cli`.
-3. Backend services reachable on the default local URLs (Authoring-Gateway → `localhost:8080`).
-
-> Hint: A lightweight docker-compose stack for the backend is under discussion – contributions welcome.
+1. **Node 20** with **npm** (use [nvm](https://github.com/nvm-sh/nvm); `nvm use` picks up `.nvmrc`).
+2. **Grunt CLI** – installed locally by `npm install`; run it with `npx grunt`.
+3. Backend services on the **same origin** as the UI. The app calls relative paths
+   (`/auth`, `/authoring-services/`, `/snowstorm/snomed-ct/`, …), so in practice a
+   reverse proxy is needed in front of `grunt serve` – see 4.3.
 
 ### 4.2  Clone & Install
 
 ```bash
-git clone @https://github.com/IHTSDO/authoring-ui.git
+git clone https://github.com/IHTSDO/authoring-ui.git
 cd authoring-ui
-npm install           # installs node & bower dependencies
+nvm use
+npm install
 ```
 
 ### 4.3  Run in Development Mode
 
 ```bash
-grunt serve           # opens http://localhost:9000 with LiveReload
+npx grunt serve       # http://localhost:9000 with LiveReload (UI_PORT=… to change)
 ```
 
 * Edits to HTML/JS/SCSS trigger automatic reloads.
-* API calls are proxied to `localhost:8080` – adjust in `Gruntfile.js` if required.
+* `grunt serve` serves only the static app; it does **not** proxy API calls. On its own
+  the app stops at start-up because it can't load `/authoring-services/ui-configuration`
+  or the logged-in user from `/auth`.
+* To run against a complete local backend (Snowstorm, Authoring Services and a stand-in
+  for IMS login, with no IHTSDO account needed) follow **[local-dev/README.md](local-dev/README.md)**.
 
 ### 4.4  Build for Production
 
