@@ -24,6 +24,8 @@ var PORT = parseInt(process.env.GATEWAY_PORT || '9100', 10);
 var UI_URL = process.env.UI_URL || 'http://localhost:9001';
 var AS_URL = process.env.AS_URL || 'http://localhost:8081';
 var SNOWSTORM_URL = process.env.SNOWSTORM_URL || 'http://localhost:8090';
+// Default reasoner for classifications that don't name one, e.g. from the UI's Classify button
+var REASONER_ID = process.env.REASONER_ID || '';
 var USERS_FILE = process.env.USERS_FILE || path.join(__dirname, 'users.json');
 
 var COOKIE_NAME = 'local-ims';
@@ -184,10 +186,20 @@ function buildHeaders(req, backend, targetHost) {
   return headers;
 }
 
+// Adds reasonerId to Snowstorm "start classification" requests that don't have one
+function withDefaultReasoner(req, parsed, targetPath) {
+  if (!REASONER_ID || req.method !== 'POST' || parsed.query.reasonerId ||
+      parsed.pathname.indexOf(SNOWSTORM_PREFIX + '/') !== 0 || !/\/classifications\/?$/.test(parsed.pathname)) {
+    return targetPath;
+  }
+  return targetPath + (targetPath.indexOf('?') === -1 ? '?' : '&') + 'reasonerId=' + encodeURIComponent(REASONER_ID);
+}
+
 function proxy(req, res, parsed) {
   var backend = backendFor(parsed.pathname);
   var target = url.parse(backend.target);
   var targetPath = backend.path !== null ? backend.path + (parsed.search || '') : req.url;
+  targetPath = withDefaultReasoner(req, parsed, targetPath);
   var upstream = http.request({
     hostname: target.hostname,
     port: target.port,
@@ -293,3 +305,6 @@ console.log('Local gateway listening on http://localhost:' + PORT);
 console.log('  UI                  -> ' + UI_URL);
 console.log('  /authoring-services -> ' + AS_URL);
 console.log('  ' + SNOWSTORM_PREFIX + ' -> ' + SNOWSTORM_URL);
+if (REASONER_ID) {
+  console.log('  default reasoner    -> ' + REASONER_ID);
+}

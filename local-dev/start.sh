@@ -36,7 +36,7 @@ if is_running gateway; then
   echo 'Gateway already running'
 else
   echo "Starting gateway on $GATEWAY_PORT"
-  GATEWAY_PORT=$GATEWAY_PORT UI_URL="http://localhost:$UI_PORT" \
+  GATEWAY_PORT=$GATEWAY_PORT UI_URL="http://localhost:$UI_PORT" REASONER_ID="$REASONER_ID" \
     AS_URL="http://localhost:$AUTHORING_SERVICES_PORT" SNOWSTORM_URL="http://localhost:$SNOWSTORM_PORT" \
     nohup node "$LOCAL_DEV/gateway.js" > "$LOGS/gateway.log" 2>&1 &
   echo $! > "$LOGS/gateway.pid"
@@ -64,7 +64,22 @@ else
   mkdir -p "$LOCAL_DEV/data/classification-service"
   cd "$LOCAL_DEV/data/classification-service"
   # classifying a whole edition (e.g. AU with AMT) needs a large heap
-  nohup "$JAVA_25" -Xmx12g -jar "$CLASSIFICATION_SERVICE_JAR" \
+  CLASSIFICATION_JAVA_ARGS=(-Xmx12g -jar "$CLASSIFICATION_SERVICE_JAR")
+  if [ -f "$KONCLUDE_PLUGIN_JAR" ]; then
+    # Copy the plugin on every start, so the latest build is used but a rebuild while the
+    # service runs can't change the jar under it, then extract its native library and
+    # start through PropertiesLauncher, which adds loader.path to the class path
+    echo "  with Konclude from $KONCLUDE_PLUGIN_JAR"
+    rm -rf reasoners native && mkdir -p reasoners native
+    cp "$KONCLUDE_PLUGIN_JAR" reasoners/konclude.jar
+    unzip -o -q -j reasoners/konclude.jar 'lib/native/macos-arm64/*' -d native
+    # --add-opens repeats the jar's Add-Opens manifest entry, which only applies with -jar
+    # (the OWL API's Guice needs it); JNI libraries need native access on Java 25
+    CLASSIFICATION_JAVA_ARGS=(-Xmx12g --add-opens java.base/java.lang=ALL-UNNAMED --enable-native-access=ALL-UNNAMED
+      -Dloader.path="$PWD/reasoners/konclude.jar" -Djava.library.path="$PWD/native"
+      -cp "$CLASSIFICATION_SERVICE_JAR" org.springframework.boot.loader.launch.PropertiesLauncher)
+  fi
+  nohup "$JAVA_25" "${CLASSIFICATION_JAVA_ARGS[@]}" \
     --spring.config.additional-location="file:$LOCAL_DEV/classification-service.properties" \
     --server.port="$CLASSIFICATION_SERVICE_PORT" \
     > "$LOGS/classification-service.log" 2>&1 &

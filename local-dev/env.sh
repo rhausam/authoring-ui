@@ -11,6 +11,15 @@ LOGS="$LOCAL_DEV/logs"
 : "${SNOWSTORM_JAR:=$HOME/git-repo/snowstorm/target/snowstorm-11.0.0.jar}"
 : "${AUTHORING_SERVICES_JAR:=$HOME/git-repo/authoring-services/target/authoring-services-10.0.1.jar}"
 : "${CLASSIFICATION_SERVICE_JAR:=$HOME/git-repo/classification-service/target/classification-service-10.0.1.jar}"
+
+# Optional extra reasoner for the Classification Service (ELK is built in). If this jar
+# exists, start.sh adds it to the class path and extracts its native library; see
+# "Other reasoners" in local-dev/README.md.
+: "${KONCLUDE_PLUGIN_JAR:=$HOME/git-repo/Konclude/Java/protege/target/konclude-protege-plugin-0.7.0-SNAPSHOT.jar}"
+# Reasoner factory used when a classification doesn't name one (e.g. the UI's Classify
+# button). Empty means Snowstorm's default, ELK. For Konclude:
+#   REASONER_ID=com.konclude.owlapi.KoncludeReasonerFactory
+: "${REASONER_ID:=}"
 : "${ACTIVEMQ_HOME:=$(brew --prefix activemq 2>/dev/null)}"
 
 : "${GATEWAY_PORT:=9100}"

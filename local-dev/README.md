@@ -158,6 +158,43 @@ Classifying a task runs the whole edition through ELK: about 70 seconds for the 
 Edition on an M3, with a 12 GB heap for the Classification Service. Review the results
 and save them from the task's Classification view.
 
+To save the results, hover over the green bell icon in the left icon column of the task
+editor, choose **View Classification**, then click **Accept Classification Results** in the
+report's header. Only the task's author sees that button.
+
+### Other reasoners
+
+The Classification Service loads the reasoner by its OWL API `OWLReasonerFactory` class
+name, which Snowstorm passes as `reasonerId` (default
+`org.semanticweb.elk.owlapi.ElkReasonerFactory`). Another reasoner must be built for
+OWL API 4 (the service bundles 4.1.3) and be on the service's class path.
+
+`start.sh` does this for [Konclude](https://github.com/konclude/Konclude) when
+`KONCLUDE_PLUGIN_JAR` (see `env.sh`) points at a built Protege plug-in jar. On each start it
+copies the jar into `local-dev/data/classification-service/reasoners/`, extracts the native
+library, and starts the service with the jar on the class path. Restart the service
+(`stop.sh` / `start.sh`) to pick up a new plug-in build.
+
+To choose a reasoner:
+
+- **For one classification**, start it through Snowstorm:
+
+  ```bash
+  curl -X POST -H 'Cookie: local-ims=author1' \
+    'http://localhost:9100/snowstorm/snomed-ct/MAIN/AUDEMO/AUDEMO-1/classifications?reasonerId=com.konclude.owlapi.KoncludeReasonerFactory'
+  ```
+
+  The result shows up in the task's bell menu like any other. Refresh the page, because no
+  completion notification is sent.
+
+- **For the UI's Classify button**, set `REASONER_ID=com.konclude.owlapi.KoncludeReasonerFactory`
+  in `local-dev/env.local.sh` and restart the gateway. It adds that `reasonerId` to every
+  classification request that doesn't name a reasoner.
+
+On the AU Edition, Konclude infers the same hierarchy as ELK, in about 285 s against ELK's 70 s:
+22 s to create the reasoner, 81 s of reasoning, and 131 s for the toolkit to read the hierarchy
+back through the reasoner API.
+
 To try the review workflow, create a task as `author1`, submit it for review,
 then log out (user menu) and log in as `reviewer1`.
 
