@@ -14,8 +14,9 @@ LOGS="$LOCAL_DEV/logs"
 
 # Optional extra reasoner for the Classification Service (ELK is built in). If this jar
 # exists, start.sh adds it to the class path and extracts its native library; see
-# "Other reasoners" in local-dev/README.md.
-: "${KONCLUDE_PLUGIN_JAR:=$HOME/git-repo/Konclude/Java/protege/target/konclude-protege-plugin-0.7.0-SNAPSHOT.jar}"
+# "Other reasoners" in local-dev/README.md. Use a release build at a stable path, not a
+# development build directory that test runs overwrite with unreleased code.
+: "${KONCLUDE_PLUGIN_JAR:=$HOME/build/protege-plugin-master/konclude-protege-plugin-master.jar}"
 # Reasoner factory used when a classification doesn't name one (e.g. the UI's Classify
 # button). Empty means Snowstorm's default, ELK. For Konclude:
 #   REASONER_ID=com.konclude.owlapi.KoncludeReasonerFactory

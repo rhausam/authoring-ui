@@ -170,7 +170,9 @@ name, which Snowstorm passes as `reasonerId` (default
 OWL API 4 (the service bundles 4.1.3) and be on the service's class path.
 
 `start.sh` does this for [Konclude](https://github.com/konclude/Konclude) when
-`KONCLUDE_PLUGIN_JAR` (see `env.sh`) points at a built Protege plug-in jar. On each start it
+`KONCLUDE_PLUGIN_JAR` (see `env.sh`) points at a built Protege plug-in jar. Use a release
+build kept at a stable path, not a development build directory: test runs overwrite those
+with whatever branch is checked out. On each start it
 copies the jar into `local-dev/data/classification-service/reasoners/`, extracts the native
 library, and starts the service with the jar on the class path. Restart the service
 (`stop.sh` / `start.sh`) to pick up a new plug-in build.
