@@ -26,6 +26,17 @@ var AS_URL = process.env.AS_URL || 'http://localhost:8081';
 var SNOWSTORM_URL = process.env.SNOWSTORM_URL || 'http://localhost:8090';
 // Default reasoner for classifications that don't name one, e.g. from the UI's Classify button
 var REASONER_ID = process.env.REASONER_ID || '';
+// Built checkout of https://github.com/IHTSDO/sct-browser-frontend, served at /browser/
+// (the UI's "TS Browser" link)
+var BROWSER_DIR = process.env.BROWSER_DIR || '';
+
+var CONTENT_TYPES = {
+  '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css',
+  '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.gif': 'image/gif',
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf', '.eot': 'application/vnd.ms-fontobject', '.properties': 'text/plain; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8', '.map': 'application/json'
+};
 var USERS_FILE = process.env.USERS_FILE || path.join(__dirname, 'users.json');
 
 var COOKIE_NAME = 'local-ims';
@@ -156,6 +167,33 @@ function authHeaders(req) {
   };
 }
 
+function serveBrowser(res, pathname) {
+  if (!BROWSER_DIR || !fs.existsSync(BROWSER_DIR)) {
+    return sendJson(res, 404, {error: 'TS Browser not set up: set BROWSER_DIR to a built sct-browser-frontend checkout (see local-dev/README.md)'});
+  }
+  var relative = decodeURIComponent(pathname.slice('/browser/'.length)) || 'index.html';
+  var root = path.resolve(BROWSER_DIR);
+  var file = path.resolve(root, relative);
+  if (file !== root && file.indexOf(root + path.sep) !== 0) {
+    return sendJson(res, 403, {error: 'Forbidden'});
+  }
+  fs.stat(file, function (err, stat) {
+    if (!err && stat.isDirectory()) {
+      file = path.join(file, 'index.html');
+    }
+    fs.readFile(file, function (readErr, data) {
+      if (readErr) {
+        return sendJson(res, 404, {error: 'Not found', path: pathname});
+      }
+      res.writeHead(200, {
+        'Content-Type': CONTENT_TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream',
+        'Cache-Control': 'no-cache'
+      });
+      res.end(data);
+    });
+  });
+}
+
 function backendFor(pathname) {
   if (pathname === '/authoring-services' || pathname.indexOf('/authoring-services/') === 0) {
     return {target: AS_URL, path: null, auth: true};
@@ -243,6 +281,12 @@ function handleRequest(req, res) {
   if (pathname === '/launcherConfig.json') {
     return sendJson(res, 200, {apps: []});
   }
+  if (pathname === '/browser') {
+    return redirect(res, '/browser/' + (parsed.search || ''));
+  }
+  if (pathname.indexOf('/browser/') === 0) {
+    return serveBrowser(res, pathname);
+  }
   if (pathname === '/' && !currentUser(req)) {
     return redirect(res, '/local-login');
   }
@@ -305,6 +349,9 @@ console.log('Local gateway listening on http://localhost:' + PORT);
 console.log('  UI                  -> ' + UI_URL);
 console.log('  /authoring-services -> ' + AS_URL);
 console.log('  ' + SNOWSTORM_PREFIX + ' -> ' + SNOWSTORM_URL);
+if (BROWSER_DIR) {
+  console.log('  /browser/           -> ' + BROWSER_DIR);
+}
 if (REASONER_ID) {
   console.log('  default reasoner    -> ' + REASONER_ID);
 }

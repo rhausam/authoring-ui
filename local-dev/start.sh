@@ -36,7 +36,7 @@ if is_running gateway; then
   echo 'Gateway already running'
 else
   echo "Starting gateway on $GATEWAY_PORT"
-  GATEWAY_PORT=$GATEWAY_PORT UI_URL="http://localhost:$UI_PORT" REASONER_ID="$REASONER_ID" \
+  GATEWAY_PORT=$GATEWAY_PORT UI_URL="http://localhost:$UI_PORT" REASONER_ID="$REASONER_ID" BROWSER_DIR="$BROWSER_DIR" \
     AS_URL="http://localhost:$AUTHORING_SERVICES_PORT" SNOWSTORM_URL="http://localhost:$SNOWSTORM_PORT" \
     nohup node "$LOCAL_DEV/gateway.js" > "$LOGS/gateway.log" 2>&1 &
   echo $! > "$LOGS/gateway.pid"

@@ -42,6 +42,7 @@ their roles are in [`users.json`](users.json):
 | [Snowstorm](https://github.com/IHTSDO/snowstorm) | built jar with [`patches/snowstorm-11.0.0-export-module-filter.patch`](patches/) applied (see below), default `~/git-repo/snowstorm/target/snowstorm-11.0.0.jar` |
 | [Authoring Services](https://github.com/IHTSDO/authoring-services) | built jar with [`patches/authoring-services-10.0.1-local-fixes.patch`](patches/) applied (see below), default `~/git-repo/authoring-services/target/authoring-services-10.0.1.jar` |
 | [Classification Service](https://github.com/IHTSDO/classification-service) | built jar, default `~/git-repo/classification-service/target/classification-service-10.0.1.jar` |
+| [sct-browser-frontend](https://github.com/IHTSDO/sct-browser-frontend) | optional, for the UI's **TS Browser** link: cloned to `~/git-repo/sct-browser-frontend` and built (see below) |
 | [snomed-drools-rules](https://github.com/IHTSDO/snomed-drools-rules) | cloned to `~/git-repo/snomed-drools-rules`; Snowstorm runs these when the UI saves a concept |
 | SNOMED CT RF2 release | an Edition package (International, or e.g. AU/US which include International) |
 
@@ -138,6 +139,22 @@ If you change a port, also update the URLs in `authoring-services.properties`.
    `RF2_RELEASE_ZIP` and run `seed.sh` again.
    Snowstorm generates identifiers itself, so they are unique only within this
    local instance; don't distribute content authored here.
+
+## TS Browser
+
+The UI's **TS Browser** link opens `/browser/`. The gateway serves it from a built
+checkout of [sct-browser-frontend](https://github.com/IHTSDO/sct-browser-frontend)
+(`BROWSER_DIR` in `env.sh`). That checkout talks to the same Snowstorm through the
+gateway, as the logged-in user, and its Project and Task selectors browse task branches.
+To set it up:
+
+```bash
+git clone https://github.com/IHTSDO/sct-browser-frontend.git ~/git-repo/sct-browser-frontend
+cd ~/git-repo/sct-browser-frontend
+nvm use 20
+CYPRESS_INSTALL_BINARY=0 npm install
+npx grunt        # builds internal-libs/ and css/snomed-interaction-components.min.css
+```
 
 ## Daily use
 
