@@ -79,7 +79,8 @@ else
       -Dloader.path="$PWD/reasoners/konclude.jar" -Djava.library.path="$PWD/native"
       -cp "$CLASSIFICATION_SERVICE_JAR" org.springframework.boot.loader.launch.PropertiesLauncher)
   fi
-  nohup "$JAVA_25" "${CLASSIFICATION_JAVA_ARGS[@]}" \
+  # shellcheck disable=SC2086 # CLASSIFICATION_JAVA_OPTS is a list of options
+  nohup "$JAVA_25" $CLASSIFICATION_JAVA_OPTS "${CLASSIFICATION_JAVA_ARGS[@]}" \
     --spring.config.additional-location="file:$LOCAL_DEV/classification-service.properties" \
     --server.port="$CLASSIFICATION_SERVICE_PORT" \
     > "$LOGS/classification-service.log" 2>&1 &

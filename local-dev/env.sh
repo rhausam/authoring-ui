@@ -20,6 +20,8 @@ LOGS="$LOCAL_DEV/logs"
 # button). Empty means Snowstorm's default, ELK. For Konclude:
 #   REASONER_ID=com.konclude.owlapi.KoncludeReasonerFactory
 : "${REASONER_ID:=}"
+# Extra JVM options for the Classification Service, e.g. -Dkonclude.taxonomyCache=false
+: "${CLASSIFICATION_JAVA_OPTS:=}"
 : "${ACTIVEMQ_HOME:=$(brew --prefix activemq 2>/dev/null)}"
 
 : "${GATEWAY_PORT:=9100}"
