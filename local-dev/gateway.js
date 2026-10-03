@@ -24,6 +24,8 @@ var PORT = parseInt(process.env.GATEWAY_PORT || '9100', 10);
 var UI_URL = process.env.UI_URL || 'http://localhost:9001';
 var AS_URL = process.env.AS_URL || 'http://localhost:8081';
 var SNOWSTORM_URL = process.env.SNOWSTORM_URL || 'http://localhost:8090';
+var TRACEABILITY_URL = process.env.TRACEABILITY_URL || 'http://localhost:8085';
+var TRACEABILITY_PREFIX = '/authoring-traceability-service';
 // Default reasoner for classifications that don't name one, e.g. from the UI's Classify button
 var REASONER_ID = process.env.REASONER_ID || '';
 // Built checkout of https://github.com/IHTSDO/sct-browser-frontend, served at /browser/
@@ -49,7 +51,6 @@ var UNAVAILABLE_PREFIXES = [
   '/release-notes/',
   '/release-notes-management/',
   '/reporting/',
-  '/authoring-traceability-service/',
   '/template-service/',
   '/validation-reports/',
   '/validation-browser/'
@@ -144,6 +145,11 @@ function handleIms(req, res, pathname, query) {
       return sendJson(res, 200, loadUsers().filter(function (u) {
         return u.roles.indexOf(group) !== -1;
       }));
+    case '/ims/authenticate':
+      // Service-account login used by Authoring Services before it looks up other users'
+      // details; it only needs an ims-ihtsdo session cookie back
+      res.writeHead(200, {'Content-Type': 'application/json', 'Set-Cookie': 'ims-ihtsdo=local-service-session; Path=/'});
+      return res.end(JSON.stringify({}));
     case '/ims/login':
       return redirect(res, '/local-login');
     case '/ims/logout':
@@ -200,6 +206,9 @@ function backendFor(pathname) {
   }
   if (pathname === SNOWSTORM_PREFIX || pathname.indexOf(SNOWSTORM_PREFIX + '/') === 0) {
     return {target: SNOWSTORM_URL, path: pathname.slice(SNOWSTORM_PREFIX.length) || '/', auth: true};
+  }
+  if (pathname === TRACEABILITY_PREFIX || pathname.indexOf(TRACEABILITY_PREFIX + '/') === 0) {
+    return {target: TRACEABILITY_URL, path: pathname.slice(TRACEABILITY_PREFIX.length) || '/', auth: true};
   }
   return {target: UI_URL, path: null, auth: false};
 }
@@ -349,6 +358,7 @@ console.log('Local gateway listening on http://localhost:' + PORT);
 console.log('  UI                  -> ' + UI_URL);
 console.log('  /authoring-services -> ' + AS_URL);
 console.log('  ' + SNOWSTORM_PREFIX + ' -> ' + SNOWSTORM_URL);
+console.log('  ' + TRACEABILITY_PREFIX + ' -> ' + TRACEABILITY_URL);
 if (BROWSER_DIR) {
   console.log('  /browser/           -> ' + BROWSER_DIR);
 }

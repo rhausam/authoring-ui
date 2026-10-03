@@ -10,6 +10,7 @@ LOGS="$LOCAL_DEV/logs"
 
 : "${SNOWSTORM_JAR:=$HOME/git-repo/snowstorm/target/snowstorm-11.0.0.jar}"
 : "${AUTHORING_SERVICES_JAR:=$HOME/git-repo/authoring-services/target/authoring-services-10.0.1.jar}"
+: "${TRACEABILITY_SERVICE_JAR:=$HOME/git-repo/traceability-service/target/authoring-traceability-service-6.0.0.jar}"
 : "${CLASSIFICATION_SERVICE_JAR:=$HOME/git-repo/classification-service/target/classification-service-10.0.1.jar}"
 
 # Optional extra reasoner for the Classification Service (ELK is built in). If this jar
@@ -33,6 +34,7 @@ LOGS="$LOCAL_DEV/logs"
 : "${SNOWSTORM_PORT:=8090}"
 : "${AUTHORING_SERVICES_PORT:=8081}"
 : "${CLASSIFICATION_SERVICE_PORT:=8089}"
+: "${TRACEABILITY_SERVICE_PORT:=8085}"
 
 # The RF2 release loaded into Snowstorm. seed.sh links it into the Classification
 # Service release store and sets it as MAIN's previousPackage.

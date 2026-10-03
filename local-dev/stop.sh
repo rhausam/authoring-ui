@@ -3,7 +3,7 @@
 set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-for name in gateway grunt classification-service authoring-services snowstorm; do
+for name in gateway grunt classification-service traceability-service authoring-services snowstorm; do
   if is_running "$name"; then
     echo "Stopping $name"
     # grunt is started via npx, so stop its children too

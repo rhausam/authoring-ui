@@ -37,6 +37,7 @@ if is_running gateway; then
 else
   echo "Starting gateway on $GATEWAY_PORT"
   GATEWAY_PORT=$GATEWAY_PORT UI_URL="http://localhost:$UI_PORT" REASONER_ID="$REASONER_ID" BROWSER_DIR="$BROWSER_DIR" \
+    TRACEABILITY_URL="http://localhost:$TRACEABILITY_SERVICE_PORT" \
     AS_URL="http://localhost:$AUTHORING_SERVICES_PORT" SNOWSTORM_URL="http://localhost:$SNOWSTORM_PORT" \
     nohup node "$LOCAL_DEV/gateway.js" > "$LOGS/gateway.log" 2>&1 &
   echo $! > "$LOGS/gateway.pid"
@@ -55,6 +56,19 @@ else
     --server.port="$AUTHORING_SERVICES_PORT" \
     > "$LOGS/authoring-services.log" 2>&1 &
   echo $! > "$LOGS/authoring-services.pid"
+fi
+
+if is_running traceability-service; then
+  echo 'Traceability Service already running'
+else
+  echo "Starting Traceability Service on $TRACEABILITY_SERVICE_PORT"
+  mkdir -p "$LOCAL_DEV/data/traceability-service"
+  cd "$LOCAL_DEV/data/traceability-service"
+  nohup "$JAVA_25" -Xmx1g -jar "$TRACEABILITY_SERVICE_JAR" \
+    --spring.config.additional-location="file:$LOCAL_DEV/traceability-service.properties" \
+    --server.port="$TRACEABILITY_SERVICE_PORT" \
+    > "$LOGS/traceability-service.log" 2>&1 &
+  echo $! > "$LOGS/traceability-service.pid"
 fi
 
 if is_running classification-service; then
@@ -102,6 +116,7 @@ fi
 wait_for_url "http://localhost:$AUTHORING_SERVICES_PORT/authoring-services/version" 'Authoring Services'
 wait_for_url "http://localhost:$UI_PORT/" UI
 wait_for_url "http://localhost:$CLASSIFICATION_SERVICE_PORT/classification-service/version" 'Classification Service'
+wait_for_url "http://localhost:$TRACEABILITY_SERVICE_PORT/version" 'Traceability Service'
 
 echo
 echo "Ready: http://localhost:$GATEWAY_PORT   (logs in local-dev/logs/)"
