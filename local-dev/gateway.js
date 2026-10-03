@@ -147,8 +147,10 @@ function handleIms(req, res, pathname, query) {
       }));
     case '/ims/authenticate':
       // Service-account login used by Authoring Services before it looks up other users'
-      // details; it only needs an ims-ihtsdo session cookie back
-      res.writeHead(200, {'Content-Type': 'application/json', 'Set-Cookie': 'ims-ihtsdo=local-service-session; Path=/'});
+      // details. Its IMS client picks the cookie named after the first label of the IMS
+      // host (ims.url=http://127.0.0.1:9100/ims gives "127"), like dev-ims-ihtsdo in
+      // SNOMED International deployments
+      res.writeHead(200, {'Content-Type': 'application/json', 'Set-Cookie': '127-ims-ihtsdo=local-service-session; Path=/'});
       return res.end(JSON.stringify({}));
     case '/ims/login':
       return redirect(res, '/local-login');
