@@ -272,6 +272,31 @@ the promotion checks, the rebase status and concept history. Only changes made w
 is running are recorded: content changed before it was set up won't appear in a review
 until it is changed again.
 
+## International Edition (reasoner comparisons)
+
+A second Snowstorm can hold the International Edition alongside the main (AU) content,
+in its own Elasticsearch indices (prefix `int-`) and with its own JMS queue names
+([`snowstorm-int.properties`](snowstorm-int.properties)). Run it instead of the main
+Snowstorm (same port), with ActiveMQ and the Classification Service started:
+
+```bash
+./local-dev/stop.sh                       # the main Snowstorm must not be running
+# start ActiveMQ and the Classification Service as start.sh does, then:
+cd local-dev/data/snowstorm-int           # Snowstorm writes working files here
+java -Xms2g -Xmx6g -jar ~/git-repo/snowstorm/target/snowstorm-11.0.0.jar \
+  --spring.config.additional-location=file:$PWD/../../snowstorm-int.properties \
+  [--import=$HOME/Downloads/SnomedCT_InternationalRF2_PRODUCTION_20261001T120000Z.zip]
+```
+
+`--import` is only needed the first time (about 11 minutes for 20261001); the `int-`
+indices are kept afterwards. Link the release zip into
+`local-dev/data/classification-service/releases/` and set it as `MAIN`'s
+`previousPackage`, as `seed.sh` does for AU. Roles are disabled on this instance, so it is
+called directly on `localhost:8090`; classify an unchanged child branch of `MAIN`, with
+`reasonerId` as above. On 20261001 both ELK and Konclude 63910d61 give no changes and no
+equivalents, i.e. the release's 647,971 inferred IS_A relationships; ELK about 49 s,
+Konclude about 71 s per classification.
+
 ## TS Browser
 
 The UI's **TS Browser** link opens `/browser/`. The gateway serves it from a built
@@ -286,6 +311,18 @@ cd ~/git-repo/sct-browser-frontend
 nvm use 20
 CYPRESS_INSTALL_BINARY=0 npm install
 npx grunt        # builds internal-libs/ and css/snomed-interaction-components.min.css
+```
+
+## Elasticsearch replicas
+
+On a single-node Elasticsearch an index with replicas stays yellow, because a replica can't
+share a node with its primary. Snowstorm creates its indices without replicas, but the
+Traceability Service created `trace-activity` with one. If that index is ever recreated, set
+it back with:
+
+```bash
+curl -XPUT localhost:9200/trace-activity/_settings -H 'Content-Type: application/json' \
+  -d '{"index":{"number_of_replicas":0}}'
 ```
 
 ## The fake IMS
